@@ -8,8 +8,50 @@ from plyer import notification
 from datetime import *
 import time
 import threading
+import sqlite3
+
+db = sqlite3.connect("events.db")
+cursor = db.cursor()
+cursor.execute("CREATE TABLE events(event_id INTEGER PRIMARY KEY AUTO_INCREMENT, event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0")
+
+event_loading = threading.Thread(target='load_events', args=(cursor))
+event_loading.start()
+
+def load_events(cursor):
+    while True:
+        for row in cursor.execute("SELECT * FROM events"):
+            row_to_list = list(row.split(","))
+            crt = datetime.now()
+            ct = str(str(crt.hour) + ':' + str(crt.minute))
+            mct = datetime.strptime(ct, '%H:%M')
+            if row_to_list[1] == mct and row[3] == 0:
+                params = row[0]
+                notification.notify(title='Your event', message=row_to_list[2])
+                cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_id = ?", params)
+
 
 def notify():
+    try:
+        hour = H1e.get()
+        h = datetime.strptime(hour, '%H:%M')
+        crt = datetime.now()
+        print(crt)
+        ct = str(str(crt.hour) + ':' + str(crt.minute))
+        mct = datetime.strptime(ct, '%H:%M')
+    except:
+        pass
+    data = [str(h), notification_text, 0]
+    adding_cursor = db.cursor()
+    adding_cursor.execute("INSERT INTO events VALUES(?)", data)
+
+def nn():
+    t=threading.Thread(target=notify)
+    global notification_text
+    notification_text=D1e.get('1.0',END)
+    t.start()
+    t.join()
+
+'''
     print(len(H1e.get()))
     hour = H1e.get()
     print(hour)
@@ -22,9 +64,14 @@ def notify():
         abc = h - mct
         fgh = abc.total_seconds()
         time.sleep(fgh)
-        notification.notify(title='Your event', message=notification_text)
+        try:
+            notification.notify(title='Your event', message=notification_text)
+            print('should be done')
+        except:
+            print('failed')
     except:
         pass
+
 def notify1():
     hour1=new_he.get()
     h1 = datetime.strptime(hour1, '%H:%M')
@@ -65,6 +112,7 @@ def nn2():
     nnew_nt=nnew_description.get('1.0', END)
     t = threading.Thread(target=notify2)
     t.start()
+'''
 def tasks():
     root2 = Toplevel(bg='light blue')
     root2.geometry('600x750+600+210')
