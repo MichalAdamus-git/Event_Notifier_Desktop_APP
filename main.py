@@ -9,16 +9,13 @@ from datetime import *
 import time
 import threading
 import sqlite3
+from time import sleep
 
 def load_events():
     global my_custom_db 
     my_custom_db = sqlite3.connect("events.db")
     cursor = my_custom_db.cursor()
     closed = False
-    '''
-    cursor.execute(
-        "CREATE TABLE events(event_id INTEGER PRIMARY KEY AUTOINCREMENT, event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0)")
-   '''
     while True:
         if stop_loading:
             my_custom_db.close()
@@ -29,43 +26,42 @@ def load_events():
             cursor = my_custom_db.cursor()
         if stop_loading == False and closed == False:
             for row in cursor.execute("SELECT * FROM events"):
-                row_to_list = list(row.split(","))
                 crt = datetime.now()
-                ct = str(str(crt.hour) + ':' + str(crt.minute))
-                mct = datetime.strptime(ct, '%H:%M')
-                if row_to_list[1] == mct and row[3] == 0:
+                ct = str(str(crt.year) + '-' + str(crt.month) + '-' + str(crt.day) + ' ' + str(crt.hour) + ':' + str(crt.minute))
+                mct = datetime.strptime(ct, '%Y-%m-%d %H:%M')
+                if row[1] == mct and row[3] == 0:
                     params = row[0]
                     notification.notify(title='Your event', message=row_to_list[2])
-                    cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_id = ?", params)
+                    cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_name = ?", params)
 
 def notify():
+
     global stop_loading
     stop_loading = True
+    today_data = cal.get_date()
     try:
         db_thread1 = sqlite3.connect("events.db")
         cursor = db_thread1.cursor()
         hour = H1e.get()
-        h = datetime.strptime(hour, '%H:%M')
-        crt = datetime.now()
-        print(crt)
-        ct = str(str(crt.hour) + ':' + str(crt.minute))
-        mct = datetime.strptime(ct, '%H:%M')
-    except:
-        pass
-    data = [str(h), notification_text, 0]
-    db_thread1.execute("INSERT INTO events VALUES(?)", data)
-    db_thread1.commit()
-    sleep(5)
-    db_thread1.close()
-    stop_loading = False
-
+        if hour[2] != ':':
+            hour_formatting = hour[0:2] + ':' + hour[3:]
+        else:
+            hour_formatting = hour
+        event_time_string = today_data + ' ' + hour_formatting
+        data = [h, notification_text, 0]
+        db_thread1.execute("INSERT INTO events VALUES(?,?,?)", data)
+        db_thread1.commit()
+        sleep(5)
+        db_thread1.close()
+        stop_loading = False
+    except Exception as e:
+        print(e)
 
 def nn():
     t=threading.Thread(target=notify)
     global notification_text
     notification_text=D1e.get('1.0',END)
     t.start()
-    t.join()
 
 '''
     print(len(H1e.get()))
@@ -201,7 +197,7 @@ root = Tk(className='Orchestarate organizer')
 root.geometry('800x530+500+210')
 rootf = Frame(root)
 rootf.grid(row=0, column=0)
-cal = Calendar(rootf, selectmode='day', font=('Arial', 16, 'bold'))
+cal = Calendar(rootf, selectmode='day', font=('Arial', 16, 'bold'), date_pattern = 'yyyy-mm-dd')
 cal.grid(row=0, column=0, padx=200)
 b1 = Button(root, text="see day's tasks", command=tasks)
 b1.place(x=350, y=350)
