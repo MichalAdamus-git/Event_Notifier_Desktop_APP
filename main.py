@@ -10,28 +10,40 @@ import time
 import threading
 import sqlite3
 
-db = sqlite3.connect("events.db")
-cursor = db.cursor()
-cursor.execute("CREATE TABLE events(event_id INTEGER PRIMARY KEY AUTO_INCREMENT, event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0")
-
-event_loading = threading.Thread(target='load_events', args=(cursor))
-event_loading.start()
-
-def load_events(cursor):
+def load_events():
+    global my_custom_db 
+    my_custom_db = sqlite3.connect("events.db")
+    cursor = my_custom_db.cursor()
+    closed = False
+    '''
+    cursor.execute(
+        "CREATE TABLE events(event_id INTEGER PRIMARY KEY AUTOINCREMENT, event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0)")
+   '''
     while True:
-        for row in cursor.execute("SELECT * FROM events"):
-            row_to_list = list(row.split(","))
-            crt = datetime.now()
-            ct = str(str(crt.hour) + ':' + str(crt.minute))
-            mct = datetime.strptime(ct, '%H:%M')
-            if row_to_list[1] == mct and row[3] == 0:
-                params = row[0]
-                notification.notify(title='Your event', message=row_to_list[2])
-                cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_id = ?", params)
-
+        if stop_loading:
+            my_custom_db.close()
+            closed = True
+        if stop_loading == False and closed == True:
+            closed = False
+            my_custom_db = sqlite3.connect("events.db")
+            cursor = my_custom_db.cursor()
+        if stop_loading == False and closed == False:
+            for row in cursor.execute("SELECT * FROM events"):
+                row_to_list = list(row.split(","))
+                crt = datetime.now()
+                ct = str(str(crt.hour) + ':' + str(crt.minute))
+                mct = datetime.strptime(ct, '%H:%M')
+                if row_to_list[1] == mct and row[3] == 0:
+                    params = row[0]
+                    notification.notify(title='Your event', message=row_to_list[2])
+                    cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_id = ?", params)
 
 def notify():
+    global stop_loading
+    stop_loading = True
     try:
+        db_thread1 = sqlite3.connect("events.db")
+        cursor = db_thread1.cursor()
         hour = H1e.get()
         h = datetime.strptime(hour, '%H:%M')
         crt = datetime.now()
@@ -41,8 +53,12 @@ def notify():
     except:
         pass
     data = [str(h), notification_text, 0]
-    adding_cursor = db.cursor()
-    adding_cursor.execute("INSERT INTO events VALUES(?)", data)
+    db_thread1.execute("INSERT INTO events VALUES(?)", data)
+    db_thread1.commit()
+    sleep(5)
+    db_thread1.close()
+    stop_loading = False
+
 
 def nn():
     t=threading.Thread(target=notify)
@@ -175,6 +191,11 @@ def tasks():
     bn=Button(root2,text='set notification',command=nn)
     bn.place(x=170,y=225)
 
+global stop_loading
+stop_loading = False
+
+event_loading = threading.Thread(target=load_events)
+event_loading.start()
 
 root = Tk(className='Orchestarate organizer')
 root.geometry('800x530+500+210')
