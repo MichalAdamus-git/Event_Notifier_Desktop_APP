@@ -15,6 +15,7 @@ def load_events():
     global my_custom_db 
     my_custom_db = sqlite3.connect("events.db")
     cursor = my_custom_db.cursor()
+#   cursor.execute("CREATE TABLE events(event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0")
     closed = False
     while True:
         if stop_loading:
@@ -29,7 +30,7 @@ def load_events():
                 crt = datetime.now()
                 ct = str(str(crt.year) + '-' + str(crt.month) + '-' + str(crt.day) + ' ' + str(crt.hour) + ':' + str(crt.minute))
                 mct = datetime.strptime(ct, '%Y-%m-%d %H:%M')
-                if row[1] == mct and row[3] == 0:
+                if row[0] == mct and row[3] == 0:
                     params = row[0]
                     notification.notify(title='Your event', message=row_to_list[2])
                     cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_name = ?", params)
