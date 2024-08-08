@@ -15,7 +15,7 @@ def load_events():
     global my_custom_db 
     my_custom_db = sqlite3.connect("events.db")
     cursor = my_custom_db.cursor()
-#   cursor.execute("CREATE TABLE events(event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0")
+    #    cursor.execute("CREATE TABLE events(event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0)")
     closed = False
     while True:
         if stop_loading:
@@ -26,14 +26,16 @@ def load_events():
             my_custom_db = sqlite3.connect("events.db")
             cursor = my_custom_db.cursor()
         if stop_loading == False and closed == False:
+            crt = datetime.now()
+            ct = str(str(crt.year) + '-' + str(crt.month) + '-' + str(crt.day) + ' ' + str(crt.hour) + ':' + str(crt.minute))
+            mct = datetime.strptime(ct, '%Y-%m-%d %H:%M')
             for row in cursor.execute("SELECT * FROM events"):
-                crt = datetime.now()
-                ct = str(str(crt.year) + '-' + str(crt.month) + '-' + str(crt.day) + ' ' + str(crt.hour) + ':' + str(crt.minute))
-                mct = datetime.strptime(ct, '%Y-%m-%d %H:%M')
-                if row[0] == mct and row[3] == 0:
-                    params = row[0]
-                    notification.notify(title='Your event', message=row_to_list[2])
-                    cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_name = ?", params)
+                event_time_datetime_type = datetime.strptime(row[0], '%Y-%m-%d %H:%M')
+                if event_time_datetime_type <= mct and row[2] == 0:
+                    params = (row[1],)
+                    notification.notify(title='Your event', message=row[1])
+                    cursor.execute("UPDATE events SET event_displayed = 1 WHERE event_description = ?", params)
+                    my_custom_db.commit()
 
 def notify():
 
@@ -49,7 +51,7 @@ def notify():
         else:
             hour_formatting = hour
         event_time_string = today_data + ' ' + hour_formatting
-        data = [h, notification_text, 0]
+        data = [event_time_string, notification_text, 0]
         db_thread1.execute("INSERT INTO events VALUES(?,?,?)", data)
         db_thread1.commit()
         sleep(5)
