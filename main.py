@@ -15,7 +15,7 @@ def load_events():
     global my_custom_db 
     my_custom_db = sqlite3.connect("events.db")
     cursor = my_custom_db.cursor()
-    #    cursor.execute("CREATE TABLE events(event_time TEXT, event_description TEXT, event_displayed INTEGER DEFAULT 0)")
+    cursor.execute("CREATE TABLE events(event_time TEXT, event_description TEXT UNIQUE, event_displayed INTEGER DEFAULT 0)")
     closed = False
     while True:
         if stop_loading:
